@@ -6,7 +6,6 @@ plan
 destroy
 .tfenv
 
-
 # dependencies
 /node_modules
 /.pnp
