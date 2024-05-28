@@ -17,6 +17,9 @@ export default function Home() {
         <p className={styles.description}>
           Data e hora atual: {new Date().toLocaleString()}
         </p>
+        <p className={styles.description}>
+          Variável de Ambiente: {process.env.NEXT_ENV}
+        </p>
       </main>
 
       <footer className={styles.footer}>
