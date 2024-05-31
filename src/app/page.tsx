@@ -12,7 +12,7 @@ export default function Home() {
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Bem-vindo à Página de Teste DevOpss!
+          Bem-vindo à Página de Teste de jackinho da bahia!
         </h1>
         <p className={styles.description}>
           Data e hora atual: {new Date().toLocaleString()}
