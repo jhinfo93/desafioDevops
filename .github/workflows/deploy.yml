@@ -49,6 +49,9 @@ jobs:
 
       - name: Configure Amplify
         run: amplify configure  
+        
+      - name: Pull existing Amplify project
+        run: amplify pull --appId ${{ secrets.AMPLIFY_APP_ID }} --envName ${{ env.ENV }}
 
       - name: Deploy to Amplify
         run: amplify publish
