@@ -2,6 +2,7 @@ import Head from 'next/head';
 import styles from './styles/Home.module.css';
 
 export default function Home() {
+
   return (
     <div className={styles.container}>
       <Head>
@@ -18,7 +19,7 @@ export default function Home() {
           Data e hora atual: {new Date().toLocaleString()}
         </p>
         <p className={styles.description}>
-          Variável de Ambiente: - {process.env.NEXT_ENV}
+          Variável de Ambiente: - {process.env.NEXT_PUBLIC_NEXT_ENV}
         </p>
       </main>
 
