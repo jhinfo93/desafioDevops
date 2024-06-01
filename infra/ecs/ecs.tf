@@ -16,8 +16,7 @@ resource "aws_ecs_task_definition" "nginx" {
   memory                   = "512"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   container_definitions = jsonencode([
     {
       name      = "nginx"
@@ -27,8 +26,8 @@ resource "aws_ecs_task_definition" "nginx" {
       essential = true
       portMappings = [
         {
-          containerPort = 80
-          hostPort      = 80
+          containerPort = 3000
+          hostPort      = 3000
         }
       ]
       secrets = [
@@ -62,16 +61,20 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   })
 }
 
-resource "aws_iam_role_policy" "ecs_execution_role_policy" {
-  role   = aws_iam_role.ecs_task_execution_role.name
+resource "aws_iam_role_policy" "ecs_ecr_policy" {
+  name   = "ecs_ecr_policy"
+  role   = aws_iam_role.ecs_task_execution_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Action   = ["secretsmanager:GetSecretValue", "kms:Decrypt"],
-        Resource = ["arn:aws:secretsmanager:us-east-1:959936929933:secret:next/develop-7NlCU8"],
-        Effect   = "Allow"
+        Effect    = "Allow"
+        Action    = [
+          "ecr:*",
+          "secretsmanager:*"
+        ]
+        Resource  = "*"
       }
     ]
   })
@@ -98,8 +101,8 @@ resource "aws_security_group" "sg" {
   vpc_id      = module.vpc.vpc_id
 
   ingress {
-    from_port   = 80
-    to_port     = 80
+    from_port   = 3000
+    to_port     = 3000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

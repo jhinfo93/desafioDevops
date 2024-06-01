@@ -119,4 +119,5 @@ jobs:
         aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition $NEW_TASK_DEF > /dev/null 2>&1
 
         DEPLOYMENT_ID=$(aws ecs describe-services --cluster "$CLUSTER_NAME" --services "$SERVICE_NAME" --query "services[].deployments[] | [?status == 'PRIMARY'].[id]" --output text)
-      
+        
+        bash detect_faliure.sh $DEPLOYMENT_ID $CLUSTER_NAME $SERVICE_NAME $OLD_TASK
