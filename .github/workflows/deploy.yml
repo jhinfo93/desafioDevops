@@ -16,7 +16,6 @@ jobs:
   Build-and-push:
       runs-on: ubuntu-latest
       environment: ${{ github.ref_name == 'main' && 'main' || github.ref_name == 'qa' && 'qa' || 'develop' }}
-      needs: Tests
       steps:
       - name: Adjust environment based on branch
         run: |
