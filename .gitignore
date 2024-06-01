@@ -5,6 +5,7 @@
 plan
 destroy
 .tfenv
+.tfstate*
 
 # dependencies
 /node_modules

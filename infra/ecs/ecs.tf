@@ -17,6 +17,7 @@ resource "aws_ecs_task_definition" "nginx" {
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  
   container_definitions = jsonencode([
     {
       name      = "nginx"
@@ -24,6 +25,7 @@ resource "aws_ecs_task_definition" "nginx" {
       cpu       = 256
       memory    = 512
       essential = true
+      interactive = true
       portMappings = [
         {
           containerPort = 3000
@@ -72,7 +74,11 @@ resource "aws_iam_role_policy" "ecs_ecr_policy" {
         Effect    = "Allow"
         Action    = [
           "ecr:*",
-          "secretsmanager:*"
+          "secretsmanager:*",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:CreateControlChannel"
         ]
         Resource  = "*"
       }
