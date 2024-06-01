@@ -15,9 +15,8 @@ permissions:
 jobs:
 Build-and-push:
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'prod' || github.ref_name == 'qa' && 'qa' || 'develop' }}
+    environment: ${{ github.ref_name == 'main' && 'main' || github.ref_name == 'qa' && 'qa' || 'develop' }}
     needs: Tests
-    if: github.event_name != 'pull_request'
     steps:
     - name: Adjust environment based on branch
       run: |
@@ -51,7 +50,7 @@ Build-and-push:
         IMAGE_TAG: ${{ github.sha }}
       run: |
         GIT_COMMIT=$(echo $IMAGE_TAG | cut -c1-7)
-        REPOSITORY_URL="${PROJECT_NAME}-${ENV}-registry-${APP}"
+        REPOSITORY_URL="example-default-registry-next"
         docker build -t $ECR_REGISTRY/$REPOSITORY_URL --build-arg ARG_URL=$REPOSITORY_URL-base:latest --target production .
         docker tag $ECR_REGISTRY/$REPOSITORY_URL $ECR_REGISTRY/$REPOSITORY_URL:latest
         docker tag $ECR_REGISTRY/$REPOSITORY_URL $ECR_REGISTRY/$REPOSITORY_URL:$GIT_COMMIT
@@ -60,9 +59,8 @@ Build-and-push:
 
   Deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'prod' || github.ref_name == 'qa' && 'qa' || 'develop' }}
+    environment: ${{ github.ref_name == 'main' && 'main' || github.ref_name == 'qa' && 'qa' || 'develop' }}
     needs: build-and-push
-    if: github.event_name != 'pull_request'
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       PROJECT_NAME: ${{ vars.PROJECT_NAME }}
