@@ -21,7 +21,7 @@ resource "aws_ecs_task_definition" "nginx" {
   container_definitions = jsonencode([
     {
       name      = "nginx"
-      image     = "nginx:latest"
+      image     = "959936929933.dkr.ecr.us-east-1.amazonaws.com/example-default-registry-next:latest"
       cpu       = 256
       memory    = 512
       essential = true
@@ -34,12 +34,8 @@ resource "aws_ecs_task_definition" "nginx" {
       ]
       secrets = [
         {
-          name      = "NEXT_ENV"
-          valueFrom = "arn:aws:secretsmanager:us-east-1:959936929933:secret:next/develop-7NlCU8:NEXT_ENV::"
-        },
-        {
-          name      = "TZ"
-          valueFrom = "arn:aws:secretsmanager:us-east-1:959936929933:secret:next/develop-7NlCU8:TZ::"
+          name      = "NEXT_PUBLIC_NEXT_ENV"
+          valueFrom = "arn:aws:secretsmanager:us-east-1:959936929933:secret:next/develop-7NlCU8:NEXT_PUBLIC_NEXT_ENV::"
         }
     ]
     logConfiguration = {
