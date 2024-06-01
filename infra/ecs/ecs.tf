@@ -42,8 +42,21 @@ resource "aws_ecs_task_definition" "nginx" {
           valueFrom = "arn:aws:secretsmanager:us-east-1:959936929933:secret:next/develop-7NlCU8:TZ::"
         }
     ]
+    logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.default.name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "nginx"
+        }
+      }
     }
   ])
+}
+
+resource "aws_cloudwatch_log_group" "default" {
+  name              = "/ecs/nginx"
+  retention_in_days = 7
 }
 
 resource "aws_iam_role" "ecs_task_execution_role" {
@@ -78,7 +91,8 @@ resource "aws_iam_role_policy" "ecs_ecr_policy" {
           "ssmmessages:CreateDataChannel",
           "ssmmessages:OpenDataChannel",
           "ssmmessages:OpenControlChannel",
-          "ssmmessages:CreateControlChannel"
+          "ssmmessages:CreateControlChannel",
+          "logs:*"
         ]
         Resource  = "*"
       }
