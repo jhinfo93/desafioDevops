@@ -97,7 +97,7 @@ jobs:
         IMAGE_TAG: ${{ github.sha }}
       run: |
         sudo apt install jq -y
-        TASK_DEFINITION_FAMILY="${PROJECT_NAME}-${ENV}-family-${APP}"
+        TASK_DEFINITION_FAMILY="nginx-example"
         aws ecs describe-task-definition --task-definition $TASK_DEFINITION_FAMILY --query 'taskDefinition' > task-definition.json
         GIT_COMMIT=$(echo $IMAGE_TAG | cut -c1-7)
         REPOSITORY_URL="example-default-registry-next"
