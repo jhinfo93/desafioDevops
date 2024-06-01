@@ -50,7 +50,7 @@ jobs:
         run: |
           GIT_COMMIT=$(echo $IMAGE_TAG | cut -c1-7)
           REPOSITORY_URL="example-default-registry-next"
-          docker build -t $ECR_REGISTRY/$REPOSITORY_URL --build-arg ARG_URL=$REPOSITORY_URL-base:latest --target production .
+          docker build -t $ECR_REGISTRY/$REPOSITORY_URL --build-arg ARG_URL=$REPOSITORY_URL-base:latest .
           docker tag $ECR_REGISTRY/$REPOSITORY_URL $ECR_REGISTRY/$REPOSITORY_URL:latest
           docker tag $ECR_REGISTRY/$REPOSITORY_URL $ECR_REGISTRY/$REPOSITORY_URL:$GIT_COMMIT
           docker push $ECR_REGISTRY/$REPOSITORY_URL:latest
