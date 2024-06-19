@@ -2,6 +2,7 @@ import Head from 'next/head';
 import styles from './styles/Home.module.css';
 
 export default function Home() {
+
   return (
     <div className={styles.container}>
       <Head>
@@ -12,13 +13,13 @@ export default function Home() {
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Bem-vindo à Página de Teste DevOpss!
+          Bem-vindo à Página de Teste 2!
         </h1>
         <p className={styles.description}>
           Data e hora atual: {new Date().toLocaleString()}
         </p>
         <p className={styles.description}>
-          Variável de Ambiente: {process.env.NEXT_ENV}
+          Variável de Ambiente: - {process.env.NEXT_PUBLIC_NEXT_ENV}
         </p>
       </main>
 

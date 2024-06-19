@@ -1,0 +1,121 @@
+name: Deploy to ECS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop, qa, main]
+
+  pull_request:
+    branches: [develop, qa, main]
+      
+permissions:
+  id-token: write 
+  contents: read
+
+jobs:
+  Build-and-push:
+      runs-on: ubuntu-latest
+      environment: ${{ github.ref_name == 'main' && 'main' || github.ref_name == 'qa' && 'qa' || 'develop' }}
+      steps:
+      - name: Adjust environment based on branch
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "ENV=main" >> $GITHUB_ENV
+          elif [[ "${{ github.ref_name }}" == "qa" ]]; then
+            echo "ENV=qa" >> $GITHUB_ENV
+          else
+            echo "ENV=develop" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-session-name: GitHubActions
+          role-duration-seconds: 3600
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Build and Push Docker Image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          GIT_COMMIT=$(echo $IMAGE_TAG | cut -c1-7)
+          REPOSITORY_URL="example-default-registry-next"
+          docker build -t $ECR_REGISTRY/$REPOSITORY_URL --build-arg ARG_URL=$REPOSITORY_URL-base:latest .
+          docker tag $ECR_REGISTRY/$REPOSITORY_URL $ECR_REGISTRY/$REPOSITORY_URL:latest
+          docker tag $ECR_REGISTRY/$REPOSITORY_URL $ECR_REGISTRY/$REPOSITORY_URL:$GIT_COMMIT
+          docker push $ECR_REGISTRY/$REPOSITORY_URL:latest
+          docker push $ECR_REGISTRY/$REPOSITORY_URL:$GIT_COMMIT
+
+  Deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'main' || github.ref_name == 'qa' && 'qa' || 'develop' }}
+    needs: build-and-push
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      PROJECT_NAME: ${{ vars.PROJECT_NAME }}
+      APP: ${{ vars.APP }}
+    steps:
+    - name: Adjust environment based on branch
+      run: |
+        if [[ "${{ github.ref_name }}" == "main" ]]; then
+          echo "ENV=prod" >> $GITHUB_ENV
+        elif [[ "${{ github.ref_name }}" == "qa" ]]; then
+          echo "ENV=qa" >> $GITHUB_ENV
+        else
+          echo "ENV=develop" >> $GITHUB_ENV
+        fi
+
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_IAM_ROLE_TO_ASSUME }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        role-session-name: GitHubActions
+        role-duration-seconds: 3600
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Retrieve ECS Task Definition
+      id: getTaskDef
+      env:
+        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        sudo apt install jq -y
+        TASK_DEFINITION_FAMILY="nginx-example"
+        aws ecs describe-task-definition --task-definition $TASK_DEFINITION_FAMILY --query 'taskDefinition' > task-definition.json
+        GIT_COMMIT=$(echo $IMAGE_TAG | cut -c1-7)
+        REPOSITORY_URL="example-default-registry-next"
+        NEW_IMAGE="${REGISTRY}/${REPOSITORY_URL}:${GIT_COMMIT}"
+        sudo jq --arg NEW_IMAGE "$NEW_IMAGE" '.containerDefinitions[0].image = $NEW_IMAGE' task-definition.json > new-task-definition.json
+        sudo jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' new-task-definition.json > final-task-definition.json
+        echo "ECS_TASK_DEFINITION=$GITHUB_WORKSPACE/final-task-definition.json" >> $GITHUB_ENV
+
+    - name: Update Amazon ECS Task Definition and Deploy
+      env:
+        task-definition: ${{ env.ECS_TASK_DEFINITION }}
+      run: |
+        SERVICE_NAME="next-service"
+        CLUSTER_NAME="ecs-cluster-example"
+
+        NEW_TASK_DEF=$(aws ecs register-task-definition --cli-input-json file://final-task-definition.json --query 'taskDefinition.taskDefinitionArn' --output text)
+        OLD_TASK=$(aws ecs describe-services --cluster "$CLUSTER_NAME" --services "$SERVICE_NAME" --query "services[].deployments[] | [?status == 'ACTIVE'].[taskDefinition]" --output text)
+        
+        aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition $NEW_TASK_DEF > /dev/null 2>&1
+
+        DEPLOYMENT_ID=$(aws ecs describe-services --cluster "$CLUSTER_NAME" --services "$SERVICE_NAME" --query "services[].deployments[] | [?status == 'PRIMARY'].[id]" --output text)
